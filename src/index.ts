@@ -1,24 +1,32 @@
-import { Post } from "./entity/Post"
-import { Category } from "./entity/Category"
+import { Profile } from "./entity/Profile"
+import { Hobby } from "./entity/Hobby"
 import { AppDataSource } from "./data-source"
 
 AppDataSource.initialize()
   .then(async () => {
-    const category1 = new Category()
-    category1.name = "TypeScript"
-    await AppDataSource.manager.save(category1)
+    // stage 1
+    const profile = new Profile("imdudu1")
+    await AppDataSource.manager.save(profile)
 
-    const category2 = new Category()
-    category2.name = "Programming"
-    await AppDataSource.manager.save(category2)
+    const hobby1 = new Hobby(profile)
+    hobby1.name = "Programming"
+    await AppDataSource.manager.save(hobby1)
 
-    const post = new Post()
-    post.title = "TypeScript"
-    post.text = `TypeScript is Awesome!`
-    post.categories = [category1, category2]
+    const hobby2 = new Hobby(profile)
+    hobby2.name = "TypeScript"
+    await AppDataSource.manager.save(hobby2)
 
-    await AppDataSource.manager.save(post)
+    // stage 2
+    const findProfile = await AppDataSource.manager
+      .createQueryBuilder(Profile, "profile")
+      .where("profile.name = :name", { name: "imdudu1" })
+      .innerJoinAndSelect("profile.hobbies", "hobby")
+      .getOne()
 
-    console.log("Post has been saved: ", post)
+    // stage 3
+    findProfile.updateHobbies()
+
+    // stage 4
+    await AppDataSource.manager.save(findProfile)
   })
   .catch((error) => console.log("Error: ", error))
